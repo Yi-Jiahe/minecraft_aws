@@ -5,3 +5,9 @@ variable "region" {
 variable "domain" {
   type = string
 }
+
+variable "servers" {
+  type = list(object({
+    subdomain = string
+  }))
+}

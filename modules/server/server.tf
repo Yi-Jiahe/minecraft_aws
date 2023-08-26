@@ -61,3 +61,4 @@ resource "aws_iam_role_policy_attachment" "attach_efs_read_write_data_policy_to_
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.efs_read_write_data_policy.arn
 }
+

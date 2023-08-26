@@ -71,3 +71,9 @@ resource "aws_ecs_cluster" "minecraft_cluster" {
     value = "enabled"
   }
 }
+
+module "vanilla_server" {
+  source = "./modules/server"
+
+  subdomain = var.servers[0]["subdomain"]
+}
