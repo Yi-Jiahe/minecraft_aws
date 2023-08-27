@@ -9,5 +9,7 @@ variable "domain" {
 variable "servers" {
   type = list(object({
     subdomain = string
+    cpu = number
+    memory = number
   }))
 }

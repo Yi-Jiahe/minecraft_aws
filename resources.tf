@@ -45,7 +45,13 @@ resource "aws_route53_query_log" "minecraft_zone" {
   zone_id                  = data.aws_route53_zone.minecraft_zone.zone_id
 }
 
-resource "aws_security_group" "minecraft-sg" {
+resource "aws_vpc" "minecraft" {}
+
+resource "aws_subnet" "public" {
+  vpc_id = aws_vpc.minecraft.id
+}
+
+resource "aws_security_group" "minecraft_sg" {
   description = "Allows inbound Minecraft traffic (TCP on port 25565) for all IPs"
 
   ingress {
@@ -88,4 +94,10 @@ module "vanilla_server" {
     id   = aws_ecs_cluster.minecraft_cluster.id,
     name = aws_ecs_cluster.minecraft_cluster.name
   }
+
+  subnet_id = aws_subnet.public.id
+  security_group_id = aws_security_group.minecraft_sg.id
+
+  cpu = var.servers[0]["cpu"]
+  memory = var.servers[0]["memory"]
 }

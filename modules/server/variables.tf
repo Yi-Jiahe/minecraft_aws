@@ -24,3 +24,19 @@ variable "cluster" {
     name = string
   })
 }
+
+variable "cpu" {
+  type = number
+}
+
+variable "memory" {
+  type = number
+}
+
+variable "subnet_id" {
+  type = string
+}
+
+variable "security_group_id" {
+  type = string
+}
