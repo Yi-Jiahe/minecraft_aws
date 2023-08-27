@@ -11,7 +11,7 @@ Notably, the CloudWatch log group must be in the us-east-1 region, a permissive 
 resource "aws_cloudwatch_log_group" "aws_route53_minecraft_zone" {
   provider = aws.us-east-1
 
-  name              = "/aws/route53/${data.aws_route53_zone.minecraft_zone.name}"
+  name              = "/aws/route53/${var.domain}"
   retention_in_days = 3
 }
 
@@ -75,5 +75,10 @@ resource "aws_ecs_cluster" "minecraft_cluster" {
 module "vanilla_server" {
   source = "./modules/server"
 
+  domain = var.domain
   subdomain = var.servers[0]["subdomain"]
+  cluster = {
+    id   = aws_ecs_cluster.cluster.minecraft_cluster.id,
+    name = aws_ecs_cluster.minecraft_cluster.name
+  }
 }
