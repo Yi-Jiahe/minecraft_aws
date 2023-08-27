@@ -1,3 +1,12 @@
+resource "aws_route53_record" "subdomain" {
+  zone_id = var.zone_id
+  name    = "${var.subdomain}.{var.domain}"
+  type    = "A"
+  ttl     = 30
+  # Temporary value which will change when the container launches.
+  records = ["192.168.1.1"]
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -46,5 +55,13 @@ resource "aws_cloudwatch_log_subscription_filter" "dns_trigger_lambda_filter" {
   role_arn        = aws_iam_role.iam_for_lambda.arn
   log_group_name  = "/aws/route53/${var.domain}"
   filter_pattern  = var.subdomain
-  destination_arn = aws_lambda_function.launcher_lambda.arn 
+  destination_arn = aws_lambda_function.launcher_lambda.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.launcher_lambda.function_name
+  principal     = "logs.us-east-1.amazonaws.com"
+  source_arn    = var.query_log_group_arn
 }

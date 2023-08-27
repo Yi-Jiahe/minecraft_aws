@@ -75,10 +75,17 @@ resource "aws_ecs_cluster" "minecraft_cluster" {
 module "vanilla_server" {
   source = "./modules/server"
 
+  region = var.region
+
   domain = var.domain
   subdomain = var.servers[0]["subdomain"]
+
+  zone_id = data.aws_route53_zone.minecraft_zone.id
+
+  query_log_group_arn = aws_cloudwatch_log_group.aws_route53_minecraft_zone.arn
+
   cluster = {
-    id   = aws_ecs_cluster.cluster.minecraft_cluster.id,
+    id   = aws_ecs_cluster.minecraft_cluster.id,
     name = aws_ecs_cluster.minecraft_cluster.name
   }
 }

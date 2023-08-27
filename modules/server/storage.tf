@@ -39,5 +39,3 @@ resource "aws_iam_policy" "efs_read_write_data_policy" {
   policy = data.aws_iam_policy_document.efs_read_write_data_policy.json
   name   = "efs_read_write_data_policy"
 }
-
-

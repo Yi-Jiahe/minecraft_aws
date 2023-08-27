@@ -70,7 +70,7 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 resource "aws_ecs_task_set" "minecraft_service_set" {
-  service                 = aws_ecs_service.minecraft.id
-  cluster                 = var.cluster.id
+  service         = aws_ecs_service.minecraft.id
+  cluster         = var.cluster.id
   task_definition = aws_ecs_task_definition.service.id
 }

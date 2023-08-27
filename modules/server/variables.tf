@@ -2,11 +2,19 @@ variable "region" {
   type = string
 }
 
+variable "zone_id" {
+  type = string
+}
+
 variable "domain" {
   type = string
 }
 
 variable "subdomain" {
+  type = string
+}
+
+variable "query_log_group_arn" {
   type = string
 }
 
