@@ -1,8 +1,18 @@
 locals {
+  service_name     = var.subdomain 
   task_volume_name = "minecraft_storage"
 }
 
 data "aws_caller_identity" "current" {}
+
+resource "aws_route53_record" "subdomain" {
+  zone_id = var.zone_id
+  name    = "${var.subdomain}.${var.domain}"
+  type    = "A"
+  ttl     = 30
+  # Temporary value which will change when the container launches.
+  records = ["192.168.1.1"]
+}
 
 data "aws_iam_policy_document" "ecs_task_assume_role_policy" {
   statement {
@@ -27,12 +37,13 @@ resource "aws_iam_role_policy_attachment" "attach_efs_read_write_data_policy_to_
 }
 
 resource "aws_ecs_service" "minecraft" {
-  name          = "minecraft"
-  cluster       = var.cluster.id
-  desired_count = 0
+  name            = local.service_name
+  cluster         = var.cluster.id
+  task_definition = aws_ecs_task_definition.service.arn
+  desired_count   = 0
   network_configuration {
-    subnets = [var.subnet_id]
-    security_groups = [var.security_group_id]
+    subnets          = [var.subnet_id]
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -40,10 +51,12 @@ resource "aws_ecs_service" "minecraft" {
 }
 
 resource "aws_ecs_task_definition" "service" {
-  family                  = "service"
+  family                   = "service"
   requires_compatibilities = ["FARGATE"]
-  cpu                     = var.cpu
-  memory                  = var.memory
+  cpu                      = var.cpu
+  memory                   = var.memory
+  execution_role_arn       = aws_iam_role.ecs_task_role.arn
+  network_mode = "awsvpc"
 
   container_definitions = jsonencode([
     {
@@ -56,16 +69,18 @@ resource "aws_ecs_task_definition" "service" {
           hostPort      = 25565
           protocol      = "tcp"
         }
-
       ]
       environment = [
-        { EULA : "TRUE" }
+        {
+          name  = "EULA"
+          value = "TRUE"
+        }
       ]
       mountPoints = [
         {
           sourceVolume  = local.task_volume_name
           containerPath = "/data"
-          readOnly      = "false"
+          readOnly      = false
         }
       ]
     },
@@ -74,10 +89,22 @@ resource "aws_ecs_task_definition" "service" {
       image     = "doctorray/minecraft-ecsfargate-watchdog"
       essential = true
       environment = [
-        { CLUSTER = var.cluster.name },
-        { SERVICE = aws_ecs_service.minecraft },
-        { DNSZONE = var.zone_id },
-        { SERVERNAME = "${var.subdomain}.${var.domain}" }
+        {
+          name  = "CLUSTER"
+          value = var.cluster.name
+        },
+        {
+          name  = "SERVICE"
+          value = local.service_name
+        },
+        {
+          name  = "DNSZONE"
+          value = var.zone_id
+        },
+        {
+          name  = "SERVERNAME"
+          value = "${var.subdomain}.${var.domain}"
+        }
       ]
     }
   ])
@@ -86,20 +113,9 @@ resource "aws_ecs_task_definition" "service" {
     name = local.task_volume_name
 
     efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.server_file_system.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.server_access_point.id
-        iam             = "ENABLED"
-      }
+      file_system_id = aws_efs_file_system.server_file_system.id
     }
   }
-}
-
-resource "aws_ecs_task_set" "minecraft_service_set" {
-  service         = aws_ecs_service.minecraft.id
-  cluster         = var.cluster.id
-  task_definition = aws_ecs_task_definition.service.id
 }
 
 data "aws_iam_policy_document" "service_control_policy" {
@@ -118,12 +134,17 @@ data "aws_iam_policy_document" "service_control_policy" {
 }
 
 resource "aws_iam_policy" "service_control_policy" {
-  name = "service_control_policy"
+  name   = "service_control_policy"
   policy = data.aws_iam_policy_document.service_control_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "attach_service_control_policy_to_task_role" {
   role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.service_control_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "attach_service_control_policy_to_lambda_role" {
+  role       = var.launcher_lambda_role_name
   policy_arn = aws_iam_policy.service_control_policy.arn
 }
 
@@ -141,7 +162,7 @@ data "aws_iam_policy_document" "route53_policy" {
 }
 
 resource "aws_iam_policy" "route53_policy" {
-  name = "route53_policy"
+  name   = "route53_policy"
   policy = data.aws_iam_policy_document.route53_policy.json
 }
 
@@ -149,4 +170,3 @@ resource "aws_iam_role_policy_attachment" "attach_route53_policy_to_task_role" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.route53_policy.arn
 }
-
