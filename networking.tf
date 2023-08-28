@@ -7,6 +7,11 @@ resource "aws_subnet" "public" {
   cidr_block = "10.0.1.0/24"
 }
 
+resource "aws_subnet" "private" {
+  vpc_id = aws_vpc.minecraft.id
+  cidr_block = "10.0.2.0/24"
+}
+
 resource "aws_security_group" "minecraft_sg" {
   description = "Allows inbound Minecraft traffic (TCP on port 25565) for all IPs"
   vpc_id = aws_vpc.minecraft.id
@@ -32,6 +37,11 @@ resource "aws_internet_gateway" "igw" {
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.minecraft.id
+}
+
+resource "aws_route_table_association" "public_subnet" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route" "public_internet_gateway" {
