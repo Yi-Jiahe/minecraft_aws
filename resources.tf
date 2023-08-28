@@ -45,34 +45,6 @@ resource "aws_route53_query_log" "minecraft_zone" {
   zone_id                  = data.aws_route53_zone.minecraft_zone.zone_id
 }
 
-resource "aws_vpc" "minecraft" {
-  cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_subnet" "public" {
-  vpc_id = aws_vpc.minecraft.id
-  cidr_block = "10.0.1.0/24"
-}
-
-resource "aws_security_group" "minecraft_sg" {
-  description = "Allows inbound Minecraft traffic (TCP on port 25565) for all IPs"
-  vpc_id = aws_vpc.minecraft.id
-
-  ingress {
-    from_port   = 25565
-    to_port     = 25565
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 resource "aws_ecs_cluster" "minecraft_cluster" {
   name = "minecraft"
 
