@@ -42,7 +42,7 @@ resource "aws_ecs_service" "minecraft" {
   task_definition = aws_ecs_task_definition.service.arn
   desired_count   = 0
   network_configuration {
-    subnets          = [var.subnet_id]
+    subnets          = [var.public_subnet_id]
     security_groups  = [var.security_group_id]
     assign_public_ip = true
   }

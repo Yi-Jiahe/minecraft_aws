@@ -69,7 +69,8 @@ module "vanilla_server" {
     name = aws_ecs_cluster.minecraft_cluster.name
   }
 
-  subnet_id = aws_subnet.public.id
+  public_subnet_id = aws_subnet.public.id
+  private_subnet_id = aws_subnet.private.id
   security_group_id = aws_security_group.minecraft_sg.id
 
   launcher_lambda_role_name = aws_iam_role.iam_for_lambda.name

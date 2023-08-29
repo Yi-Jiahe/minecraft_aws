@@ -29,7 +29,11 @@ variable "memory" {
   type = number
 }
 
-variable "subnet_id" {
+variable "public_subnet_id" {
+  type = string
+}
+
+variable "private_subnet_id" {
   type = string
 }
 
@@ -40,3 +44,4 @@ variable "security_group_id" {
 variable "launcher_lambda_role_name" {
   type = string
 }
+
