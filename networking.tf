@@ -1,15 +1,22 @@
 resource "aws_vpc" "minecraft" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
 }
 
+data "aws_availability_zones" "available" {}
+
 resource "aws_subnet" "public" {
+  count = "${length(data.aws_availability_zones.available.names)}"
   vpc_id = aws_vpc.minecraft.id
-  cidr_block = "10.0.1.0/24"
+  cidr_block = "10.0.${10+count.index}.0/24"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
 }
 
 resource "aws_subnet" "private" {
+  count = "${length(data.aws_availability_zones.available.names)}"
   vpc_id = aws_vpc.minecraft.id
-  cidr_block = "10.0.2.0/24"
+  cidr_block = "10.0.${20+count.index}.0/24"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
 }
 
 resource "aws_security_group" "minecraft_sg" {
@@ -31,6 +38,24 @@ resource "aws_security_group" "minecraft_sg" {
   }
 }
 
+resource "aws_security_group" "efs_sg" {
+  vpc_id = aws_vpc.minecraft.id
+
+  ingress {
+    security_groups = [aws_security_group.minecraft_sg.id]
+    from_port = 2049
+    to_port = 2049
+    protocol = "tcp"
+  }
+
+  egress {
+    security_groups = [aws_security_group.minecraft_sg.id]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+  }
+}
+
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.minecraft.id
 }
@@ -40,7 +65,8 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public_subnet" {
-  subnet_id      = aws_subnet.public.id
+  count = length(aws_subnet.public)
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 

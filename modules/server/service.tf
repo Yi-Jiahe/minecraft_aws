@@ -42,8 +42,8 @@ resource "aws_ecs_service" "minecraft" {
   task_definition = aws_ecs_task_definition.service.arn
   desired_count   = 0
   network_configuration {
-    subnets          = [var.public_subnet_id]
-    security_groups  = [var.security_group_id]
+    subnets          = var.public_subnet_ids
+    security_groups  = [var.minecraft_security_group_id]
     assign_public_ip = true
   }
 
@@ -115,6 +115,11 @@ resource "aws_ecs_task_definition" "service" {
     efs_volume_configuration {
       file_system_id = aws_efs_file_system.server_file_system.id
     }
+  }
+
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "X86_64"
   }
 }
 

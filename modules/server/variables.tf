@@ -29,15 +29,19 @@ variable "memory" {
   type = number
 }
 
-variable "public_subnet_id" {
+variable "public_subnet_ids" {
+  type = list(string)
+}
+
+variable "private_subnet_ids" {
+  type = list(string)
+}
+
+variable "minecraft_security_group_id" {
   type = string
 }
 
-variable "private_subnet_id" {
-  type = string
-}
-
-variable "security_group_id" {
+variable "efs_security_group_id" {
   type = string
 }
 

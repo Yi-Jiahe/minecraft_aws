@@ -18,8 +18,10 @@ resource "aws_efs_access_point" "server_access_point" {
 }
 
 resource "aws_efs_mount_target" "private" {
+  count = length(var.private_subnet_ids)
   file_system_id = aws_efs_file_system.server_file_system.id
-  subnet_id      = var.private_subnet_id
+  subnet_id      = var.private_subnet_ids[count.index]
+  security_groups = [var.efs_security_group_id]
 }
 
 data "aws_iam_policy_document" "efs_read_write_data_policy" {
