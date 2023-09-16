@@ -66,6 +66,10 @@ resource "aws_ecs_cluster_capacity_providers" "minecraft_cluster_capacity_provid
   }
 }
 
+data "aws_s3_bucket" "minecraft_bucket" {
+  bucket = var.bucket_name
+}
+
 module "vanilla_server" {
   source = "./modules/server"
   
@@ -87,6 +91,8 @@ module "vanilla_server" {
   efs_security_group_id = aws_security_group.efs_sg.id
 
   launcher_lambda_role_name = aws_iam_role.iam_for_lambda.name
+
+  bucket_arn = data.aws_s3_bucket.minecraft_bucket.arn
 
   cpu = var.servers[0]["cpu"]
   memory = var.servers[0]["memory"]
