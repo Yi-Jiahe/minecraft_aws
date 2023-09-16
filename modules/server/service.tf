@@ -26,10 +26,17 @@ data "aws_iam_policy_document" "ecs_task_assume_role_policy" {
 }
 
 resource "aws_iam_role" "ecs_task_role" {
-  name = "ecs_minecraft_task_role"
+  name = "ecs_minecraft_task_role_${var.subdomain}"
 
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role_policy.json
 }
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecs_minecraft_task_execution_role_${var.subdomain}"
+
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_assume_role_policy.json
+}
+
 
 resource "aws_iam_role_policy_attachment" "attach_efs_read_write_data_policy_to_task_role" {
   role       = aws_iam_role.ecs_task_role.name
@@ -46,8 +53,6 @@ resource "aws_ecs_service" "minecraft" {
     security_groups  = [var.minecraft_security_group_id]
     assign_public_ip = true
   }
-
-  launch_type = "FARGATE"
 }
 
 resource "aws_ecs_task_definition" "service" {
@@ -55,7 +60,8 @@ resource "aws_ecs_task_definition" "service" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.cpu
   memory                   = var.memory
-  execution_role_arn       = aws_iam_role.ecs_task_role.arn
+  task_role_arn       = aws_iam_role.ecs_task_role.arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   network_mode = "awsvpc"
 
   container_definitions = jsonencode([
@@ -63,6 +69,14 @@ resource "aws_ecs_task_definition" "service" {
       name      = "minecraft"
       image     = "itzg/minecraft-server"
       essential = false
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group = aws_cloudwatch_log_group.minecraft_log_group.name
+          awslogs-region = var.region
+          awslogs-stream-prefix = "minecraft"
+        }
+      }
       portMappings = [
         {
           containerPort = 25565
@@ -106,9 +120,16 @@ resource "aws_ecs_task_definition" "service" {
           value = "${var.subdomain}.${var.domain}"
         }
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group = aws_cloudwatch_log_group.minecraft_log_group.name
+          awslogs-region = var.region
+          awslogs-stream-prefix = "watchdog"
+        }
+      }
     }
   ])
-
   volume {
     name = local.task_volume_name
 
@@ -174,4 +195,29 @@ resource "aws_iam_policy" "route53_policy" {
 resource "aws_iam_role_policy_attachment" "attach_route53_policy_to_task_role" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.route53_policy.arn
+}
+
+resource "aws_cloudwatch_log_group" "minecraft_log_group" {
+  name = "/ecs/${var.subdomain}"
+}
+
+data "aws_iam_policy_document" "minecraft_logging_policy" {
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+
+    resources = ["arn:aws:logs:*:*:log-group:/ecs/${var.subdomain}:*"]
+  }
+}
+
+resource "aws_iam_policy" "minecraft_log_group_policy" {
+  name   = "minecraft_logging_policy"
+  policy = data.aws_iam_policy_document.minecraft_logging_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "attach_minecraft_log_group_policy_to_task_role" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_policy.minecraft_log_group_policy.arn
 }

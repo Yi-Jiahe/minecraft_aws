@@ -54,6 +54,18 @@ resource "aws_ecs_cluster" "minecraft_cluster" {
   }
 }
 
+resource "aws_ecs_cluster_capacity_providers" "minecraft_cluster_capacity_providers" {
+  cluster_name = aws_ecs_cluster.minecraft_cluster.name
+
+  capacity_providers =  ["FARGATE", "FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    base = 0
+    weight = 100
+    capacity_provider = "FARGATE_SPOT"
+  }
+}
+
 module "vanilla_server" {
   source = "./modules/server"
   
