@@ -60,8 +60,6 @@ resource "aws_ecs_cluster_capacity_providers" "minecraft_cluster_capacity_provid
   capacity_providers =  ["FARGATE", "FARGATE_SPOT"]
 
   default_capacity_provider_strategy {
-    base = 0
-    weight = 100
     capacity_provider = "FARGATE_SPOT"
   }
 }
@@ -70,6 +68,7 @@ data "aws_s3_bucket" "minecraft_bucket" {
   bucket = var.bucket_name
 }
 
+/*
 module "vanilla_server" {
   source = "./modules/server"
   
@@ -96,4 +95,35 @@ module "vanilla_server" {
 
   cpu = var.servers[0]["cpu"]
   memory = var.servers[0]["memory"]
+}
+*/
+
+module "create_optimize" {
+  source = "./modules/server"
+  
+  region = var.region
+
+  domain = var.domain
+  subdomain = var.servers[1]["subdomain"]
+
+  zone_id = data.aws_route53_zone.minecraft_zone.id
+
+  cluster = {
+    id   = aws_ecs_cluster.minecraft_cluster.id,
+    name = aws_ecs_cluster.minecraft_cluster.name
+  }
+
+  public_subnet_ids = [for subnet in aws_subnet.public: subnet.id]
+  private_subnet_ids = [for subnet in aws_subnet.private: subnet.id]
+  minecraft_security_group_id = aws_security_group.minecraft_sg.id
+  efs_security_group_id = aws_security_group.efs_sg.id
+
+  launcher_lambda_role_name = aws_iam_role.iam_for_lambda.name
+
+  bucket_arn = data.aws_s3_bucket.minecraft_bucket.arn
+
+  cpu = var.servers[1]["cpu"]
+  memory = var.servers[1]["memory"]
+
+  env_vars = var.servers[1].env_vars
 }

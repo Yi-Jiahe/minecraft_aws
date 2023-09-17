@@ -1,4 +1,9 @@
 resource "aws_efs_file_system" "server_file_system" {
+  creation_token = "${var.subdomain}-efs"
+
+  tags = {
+    minecraft = "${var.subdomain}"
+  }
 }
 
 resource "aws_efs_access_point" "server_access_point" {

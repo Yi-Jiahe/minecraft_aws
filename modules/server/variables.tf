@@ -52,3 +52,7 @@ variable "launcher_lambda_role_name" {
 variable "bucket_arn" {
   type = string
 }
+
+variable "env_vars" {
+  type = map(string)
+}

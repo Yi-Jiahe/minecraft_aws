@@ -53,10 +53,14 @@ resource "aws_ecs_service" "minecraft" {
     security_groups  = [var.minecraft_security_group_id]
     assign_public_ip = true
   }
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight = 1
+  }
 }
 
 resource "aws_ecs_task_definition" "service" {
-  family                   = "service"
+  family                   = var.subdomain
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.cpu
   memory                   = var.memory
@@ -68,6 +72,8 @@ resource "aws_ecs_task_definition" "service" {
     {
       name      = "minecraft"
       image     = "itzg/minecraft-server"
+      cpu = var.cpu
+      memory = var.memory
       essential = false
       logConfiguration = {
         logDriver = "awslogs"
@@ -84,12 +90,14 @@ resource "aws_ecs_task_definition" "service" {
           protocol      = "tcp"
         }
       ]
-      environment = [
-        {
-          name  = "EULA"
-          value = "TRUE"
-        }
-      ]
+      environment = concat(
+        [ for name, value in var.env_vars: { name: name, value: value } ], 
+        [
+          { name: "MEMORY", value: "" }, 
+          { name: "JVM_XX_OPTS", value: "-XX:MaxRAMPercentage=75" }
+        ]
+      )
+      
       mountPoints = [
         {
           sourceVolume  = local.task_volume_name
@@ -188,7 +196,7 @@ data "aws_iam_policy_document" "route53_policy" {
 }
 
 resource "aws_iam_policy" "route53_policy" {
-  name   = "route53_policy"
+  name   = "${var.subdomain}_route53_policy"
   policy = data.aws_iam_policy_document.route53_policy.json
 }
 

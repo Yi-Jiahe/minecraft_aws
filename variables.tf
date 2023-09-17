@@ -15,5 +15,6 @@ variable "servers" {
     subdomain = string
     cpu = number
     memory = number
+    env_vars = map(string)
   }))
 }
