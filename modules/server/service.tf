@@ -108,26 +108,29 @@ resource "aws_ecs_task_definition" "service" {
     },
     {
       name      = "watchdog"
-      image     = "doctorray/minecraft-ecsfargate-watchdog"
+      image     = "yijiahe00/minecraft-ecsfargate-watchdog:1.3.0"
       essential = true
-      environment = [
-        {
-          name  = "CLUSTER"
-          value = var.cluster.name
-        },
-        {
-          name  = "SERVICE"
-          value = local.service_name
-        },
-        {
-          name  = "DNSZONE"
-          value = var.zone_id
-        },
-        {
-          name  = "SERVERNAME"
-          value = "${var.subdomain}.${var.domain}"
-        }
-      ]
+      environment = concat(
+        [ for name, value in var.env_vars: { name: name, value: value } ], 
+        [
+          {
+            name  = "CLUSTER"
+            value = var.cluster.name
+          },
+          {
+            name  = "SERVICE"
+            value = local.service_name
+          },
+          {
+            name  = "DNSZONE"
+            value = var.zone_id
+          },
+          {
+            name  = "SERVERNAME"
+            value = "${var.subdomain}.${var.domain}"
+          }
+        ]
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {
